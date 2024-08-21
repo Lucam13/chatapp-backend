@@ -63,7 +63,7 @@ io.on("connection", (socket) => {
           if (userId === senderId._id) return;
           const socketId = userSocketMap[userId];
           if (socketId) {
-            io.to(socketId).emit("newMessageFormArea", {
+            io.to(socketId).emit("newMessageFromArea", {
               message,
               areaId,
               senderId,
