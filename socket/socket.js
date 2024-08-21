@@ -2,6 +2,7 @@ import { Server } from "socket.io";
 import http from "http";
 import express from "express";
 import dotenv from "dotenv";
+import { create } from "domain";
 
 dotenv.config();
 
@@ -57,26 +58,23 @@ io.on("connection", (socket) => {
   socket.on(
     "sendMessageToArea",
     ({ message, areaId, senderId, receiverId }) => {
-      if (areaUserMap[areaId]) {
-        areaUserMap[areaId]
-          // Enviamos el mensaje a todos los usuarios en el área excepto al remitente
-          .filter((id) => id !== senderId._id)
-          .forEach((userId) => {
-            const receiverSocketId = userSocketMap[userId];
-            if (receiverSocketId) {
-              io.to(receiverSocketId).emit("newMessageFromArea", {
-                message,
-                areaId,
-                senderId,
-                receiverId,
-                createdAt: new Date(),
-              });
-            }
-          });
+      if (userSocketMap) {
+        Object.keys(userSocketMap).forEach((userId) => {
+          if (userId === senderId._id) return;
+          const socketId = userSocketMap[userId];
+          if (socketId) {
+            io.to(socketId).emit("newMessageFormArea", {
+              message,
+              areaId,
+              senderId,
+              receiverId,
+              createdAt: new Date(),
+            });
+          }
+        });
       }
     }
   );
-
   socket.on("connect_error", (error) => {
     console.error("Connection error:", error);
   });
