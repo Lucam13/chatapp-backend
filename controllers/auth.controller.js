@@ -42,7 +42,7 @@ export const signup = async (req, res) => {
 
     if (newUser) {
       // Generate JWT token here
-      generateToken(newUser._id, res);
+      const token = generateToken(newUser._id, res);
       await newUser.save();
       area.user_id.push(newUser._id);
       await area.save();
@@ -77,7 +77,7 @@ export const login = async (req, res) => {
       return res.status(400).json({ error: "Invalid username or password" });
     }
 
-    generateToken(user._id, res);
+		const token = generateToken(user._id, res);
 
     res.status(200).json({
       _id: user._id,
