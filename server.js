@@ -1,6 +1,5 @@
 import express from "express";
 import dotenv from "dotenv";
-import cookieParser from "cookie-parser";
 import morgan from "morgan";
 
 import authRoutes from "./routes/auth.routes.js";
@@ -28,7 +27,6 @@ app.use(
 );
 
 app.use(express.json()); // to parse the incoming requests with JSON payloads (from req.body)
-app.use(cookieParser());
 app.use(morgan("dev"));
 
 app.use("/api/auth", authRoutes);

@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import User from "../models/user.model.js";
 import Area from "../models/area.model.js";
-import generateTokenAndSetCookie from "../utils/generateToken.js";
+import generateToken from "../utils/generateToken.js";
 
 export const signup = async (req, res) => {
   try {
@@ -42,7 +42,7 @@ export const signup = async (req, res) => {
 
     if (newUser) {
       // Generate JWT token here
-      generateTokenAndSetCookie(newUser._id, res);
+      generateToken(newUser._id, res);
       await newUser.save();
       area.user_id.push(newUser._id);
       await area.save();
@@ -52,7 +52,8 @@ export const signup = async (req, res) => {
         fullName: newUser.fullName,
         username: newUser.username,
         profilePic: newUser.profilePic,
-        area: area.name
+        area: area.name,
+        token,
       });
     } else {
       res.status(400).json({ error: "Invalid user data" });
@@ -76,7 +77,7 @@ export const login = async (req, res) => {
       return res.status(400).json({ error: "Invalid username or password" });
     }
 
-    generateTokenAndSetCookie(user._id, res);
+    generateToken(user._id, res);
 
     res.status(200).json({
       _id: user._id,
@@ -84,6 +85,7 @@ export const login = async (req, res) => {
       username: user.username,
       profilePic: user.profilePic,
       areaId: user.area,
+      token,
     });
   } catch (error) {
     console.log("Error in login controller", error.message);
