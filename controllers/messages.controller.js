@@ -9,32 +9,40 @@ export const sendMessage = async (req, res) => {
     const senderUserId = req.user._id; // User ID of the sender
     const senderAreaId = req.user.area._id; // Area ID of the sender's area
 
-    // Find or create a conversation between these areas
-    let conversation = await Conversation.findOne({
-      areas: { $all: [senderAreaId, receiverAreaId] },
+    // Encuentra todas las conversaciones
+    let conversations = await Conversation.find();
+
+    // Filtra la conversación que tenga las áreas específicas
+    let conversation = conversations.find((conversation) => {
+      return (
+        conversation.areas[0].toString() === senderAreaId &&
+        conversation.areas[1].toString() === receiverAreaId
+      );
     });
 
+    // Si no existe conversación, crea una nueva
     if (!conversation) {
       conversation = await Conversation.create({
         areas: [senderAreaId, receiverAreaId],
       });
     }
 
-    // Create the new message with senderId as the userId
+    // Crea el nuevo mensaje con senderId como el userId
     const newMessage = new Message({
-      senderId: senderUserId, // User who sends the message
-      receiverId: receiverAreaId, // The area that receives the message
+      senderId: senderUserId, // Usuario que envía el mensaje
+      receiverId: receiverAreaId, // Área que recibe el mensaje
       message,
     });
 
+    // Si el mensaje se creó, lo agregamos a la conversación
     if (newMessage) {
       conversation.messages.push(newMessage._id);
     }
 
-    // Save the conversation and the new message
+    // Guarda la conversación y el mensaje nuevo
     await Promise.all([conversation.save(), newMessage.save()]);
 
-    // Socket.io functionality to notify the receiver
+    // Funcionalidad de Socket.io para notificar al receptor
     const receiverSocketId = getReceiverSocketId(receiverAreaId);
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("newMessage", newMessage);
@@ -47,11 +55,12 @@ export const sendMessage = async (req, res) => {
   }
 };
 
+
 export const getMessages = async (req, res) => {
   try {
     const { id: receiverAreaId } = req.params; // Area ID
     const senderAreaId = req.user.area._id; // Area ID of the sender's area
-    console.log("SENDER", senderAreaId, "RECEIVER", receiverAreaId);
+
     const conversation = await Conversation.find({
       // Find the conversation between these areas
 
@@ -74,18 +83,17 @@ export const getMessages = async (req, res) => {
       return res.status(200).json([]);
     }
 
-    console.log(conversation, "ACAAAAA");
-
-    console.log(conversation.length);
-    const conversations = conversation.filter(
-      (conversation) => conversation.areas[1].toString() === receiverAreaId
-    );
+    const conversations = conversation.filter((conversation) => {
+      if (conversation.areas[1].toString() === receiverAreaId) {
+        console.log("MESSAGE RECEIVER ID: ", conversation._id);
+      }
+      return conversation.areas[1].toString() === receiverAreaId;
+    });
     let messages = [];
     for (const conversation of conversations) {
       messages = messages.concat(conversation.messages);
     }
 
-    console.log(messages.length);
     res.status(200).json(messages);
   } catch (error) {
     console.log("Error in getMessages controller", error.message);
