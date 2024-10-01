@@ -5,20 +5,24 @@ import { getReceiverSocketId, io } from "../socket/socket.js";
 export const sendMessage = async (req, res) => {
   try {
     const { message } = req.body;
-    const { id: receiverAreaId } = req.params; // Area ID
-    const senderUserId = req.user._id; // User ID of the sender
-    const senderAreaId = req.user.area._id; // Area ID of the sender's area
+    const { id: receiverAreaId } = req.params; // Área receptora
+    const senderUserId = req.user._id; // ID del usuario remitente
+    const senderAreaId = req.user.area._id; // Área del remitente
 
-    // Encuentra todas las conversaciones
+    // Encuentra todas las conversaciones (esto sigue siendo costoso)
     let conversations = await Conversation.find();
 
-    // Filtra la conversación que tenga las áreas específicas
-    let conversation = conversations.find((conversation) => {
+    // Filtra las conversaciones que contienen ambas áreas (sin importar el orden)
+    let filteredConversations = conversations.filter((conversation) => {
+      const areas = conversation.areas.map((area) => area.toString());
       return (
-        conversation.areas[0].toString() === senderAreaId &&
-        conversation.areas[1].toString() === receiverAreaId
+        areas.includes(senderAreaId.toString()) &&
+        areas.includes(receiverAreaId.toString())
       );
     });
+
+    // Escoger la primera conversación filtrada (si existe)
+    let conversation = filteredConversations[0];
 
     // Si no existe conversación, crea una nueva
     if (!conversation) {
@@ -50,10 +54,11 @@ export const sendMessage = async (req, res) => {
 
     res.status(201).json(newMessage);
   } catch (error) {
-    console.log("Error in sendMessage controller", error.message);
+    console.log("Error en sendMessage controller", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 
 export const getMessages = async (req, res) => {
